@@ -9,7 +9,6 @@ const app = express();
 const port = 3000;
 
 //middleware
-job.start();
 app.use(express.json());
 app.use(cors())
 
@@ -20,4 +19,5 @@ app.use("/api/books", bookRoutes);
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
     connectDB();
+    job.start();
 });
