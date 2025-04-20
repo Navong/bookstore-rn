@@ -10,7 +10,16 @@ const port = 3000;
 
 //middleware
 app.use(express.json());
-app.use(cors())
+app.use(cors({
+    origin: '*'
+}));
+
+//log for crud operations
+app.get('/', (req, res) => {
+    res.status(200).json({
+        message: "I'm Awake"
+    })
+})
 
 app.use('/api/auth', authRoutes)
 app.use("/api/books", bookRoutes);
