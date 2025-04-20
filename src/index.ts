@@ -3,11 +3,13 @@ import authRoutes from "./routes/authRoutes";
 import bookRoutes from "./routes/bookRoutes";
 import { connectDB } from "./lib/db";
 import cors from "cors"
+import job from "./lib/cron";
 
 const app = express();
 const port = 3000;
 
 //middleware
+job.start();
 app.use(express.json());
 app.use(cors())
 
@@ -16,6 +18,6 @@ app.use("/api/books", bookRoutes);
 
 
 app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
+    console.log(`Server listening on port ${port}`);
     connectDB();
 });
