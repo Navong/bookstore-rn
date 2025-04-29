@@ -89,14 +89,21 @@ router.post('/login', async (req, res) => {
         const { email, password } = req.body
 
         if (!email || !password) {
-            throw new Error("All fields are required")
+            res.status(400).json({ error: "Missing required fields" });
+            return
         }
 
         const user = await User.findOne({ email })
-        if (!user) { throw new Error("Invalid credentials") }
+        if (!user) { 
+            res.status(404).json({ error: "User not found" });
+            return
+         }
 
         const isMatch = await user.comparePassword(password)
-        if (!isMatch) { throw new Error("Invalid credentials") }
+        if (!isMatch) {
+            res.status(401).json({ error: "Invalid credentials" });
+            return
+        }
 
         // generate token
         const token = generateToken(user._id)
@@ -113,6 +120,7 @@ router.post('/login', async (req, res) => {
     } catch (error) {
         console.error(error)
         res.status(500).json({ message: `${error}` });
+        return
     }
 })
 

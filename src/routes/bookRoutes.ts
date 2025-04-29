@@ -1,34 +1,50 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, Router } from "express";
 import Book from "../models/Book";
 import protectedRoute from "../middleware/auth.middleware";
 import cloudinary from "../lib/cloudinary";
 
-
-
-const router = express.Router();
+const router = Router();
 
 router.post("/", protectedRoute, async (req: Request, res: Response) => {
     try {
         const { title, caption, image, rating } = req.body;
+        // console.log(req.body);
         if (!title || !caption || !image || !rating) {
-            res.status(400).json({ error: "Missing required fields" });
+            res.status(400).json({ message: "Missing required fields" });
+            return;
         }
 
+
+
         // upload image to cloudinary
-        const uploadedImage = await cloudinary.uploader.upload(image);
+        const uploadedImage = await cloudinary.uploader.upload(image, {
+            folder: "books-images",
+            transformation: [
+                { width: 1000, crop: "scale" },
+                { quality: "auto" },
+                { fetch_format: "auto" }
+            ]
+        });
         const imageUrl = uploadedImage.secure_url;
+
+
+        if (!imageUrl) {
+            res.status(400).json({ error: "Image upload failed" });
+            return;
+        }
 
         // if exists
         if (await Book.findOne({ title })) {
             res.status(400).json({ error: "Book already exists" });
+            return;
         }
 
         const book = new Book({ title, caption, image: imageUrl, rating, user: (req as any).user._id });
         await book.save();
         res.status(201).json(book);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: `Internal server error ${error}` });
+    } catch (error: any) {
+        console.error('Error creating book:', error);
+        res.status(500).json({ error: `Internal server error ${error.message}` });
     }
 });
 
