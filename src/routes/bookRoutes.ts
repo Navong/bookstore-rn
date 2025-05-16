@@ -76,4 +76,51 @@ router.get("/", async (req: Request, res: Response) => {
     }
 })
 
+// get recommended books by the logged in user
+router.get("/user", protectedRoute, async (req: Request, res: Response) => {
+    try {
+        const books = await Book.find({ user: (req as any).user._id }).sort({ createdAt: -1 });
+        // createAt : -1 => most recent first
+        res.json(books);
+    } catch (error: any) {
+        console.error("Get user books error:", error.message);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+router.delete("/:id", protectedRoute, async (req, res) => {
+    try {
+        const book = await Book.findById(req.params.id);
+        if (!book) {
+            res.status(404).json({ message: "Book not found" });
+            return;
+        }
+
+        // check if user is the creator of the book
+        if (book.user.toString() !== (req as any).user._id.toString()) {
+            res.status(401).json({ message: "Unauthorized" });
+            return;
+        }
+
+        // https://res.cloudinary.com/de1rm4uto/image/upload/v1741568358/qyup61vejflxxw8igvi0.png
+        if (book.image && book.image.includes("cloudinary")) {
+            try {
+                const publicId = book.image ? book.image.split("/").pop()?.split(".")[0] : "";
+                if (publicId) {
+                    await cloudinary.uploader.destroy(publicId);
+                }
+            } catch (deleteError) {
+                console.log("Error deleting image from cloudinary", deleteError);
+            }
+        }
+
+        await book.deleteOne();
+
+        res.json({ message: "Book deleted successfully" });
+    } catch (error) {
+        console.log("Error deleting book", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 export default router;
