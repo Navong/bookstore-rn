@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "3000:83"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - booksy1
+      - booksy2
+      - booksy3
+
+  booksy1:
+    build: .
+    container_name: booksy1
+
+  booksy2:
+    build: .
+    container_name: booksy2
+
+  booksy3:
+    build: .
+    container_name: booksy3
+
+  redis:
+    image: redis

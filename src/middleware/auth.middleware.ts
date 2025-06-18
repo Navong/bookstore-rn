@@ -27,13 +27,18 @@ const protectedRoute = async (req: Request, res: Response, next: NextFunction) =
             res.status(401).json({ error: "Unauthorized" });
             return;
         }
-        
+
         (req as any).user = user;
         next();
-    } catch (error) {
+    } catch (error : any) {
         console.error(error);
-        res.status(500).json({ error: "Internal server error" });
-        return;
+
+        if (error.name === "TokenExpiredError") {
+            res.status(401).json({ error: "Session expired. Please log in again." });
+            return;
+        }
+
+        res.status(401).json({ error: "Unauthorized" });
     }
 };
 

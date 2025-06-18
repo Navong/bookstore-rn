@@ -14,8 +14,6 @@ router.post("/", protectedRoute, async (req: Request, res: Response) => {
             return;
         }
 
-
-
         // upload image to cloudinary
         const uploadedImage = await cloudinary.uploader.upload(image, {
             folder: "books-images",
@@ -61,7 +59,7 @@ router.get("/", async (req: Request, res: Response) => {
         const skip = (Number(page) - 1) * Number(limit);
 
         // populate help us get user details from user id
-        const books = await Book.find().skip(skip).limit(Number(limit)).populate("user", "username profileImage");
+        const books = await Book.find().skip(skip).limit(Number(limit)).populate("user", "username profileImage").sort({ createdAt: -1 });
 
         const totalBook = await Book.countDocuments();
         res.status(200).json({
@@ -84,6 +82,11 @@ router.get("/user", protectedRoute, async (req: Request, res: Response) => {
         res.json(books);
     } catch (error: any) {
         console.error("Get user books error:", error.message);
+
+        if (error.name === "TokenExpiredError") {
+            res.status(401).json({ error: "Session expired. Please log in again." });
+        }
+
         res.status(500).json({ message: "Server error" });
     }
 });
