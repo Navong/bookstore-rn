@@ -43,6 +43,7 @@ router.post("/", protectedRoute, async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error('Error creating book:', error);
         res.status(500).json({ error: `Internal server error ${error.message}` });
+        return;
     }
 });
 
@@ -71,6 +72,7 @@ router.get("/", async (req: Request, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `Internal server error ${error}` });
+        return;
     }
 })
 
@@ -88,6 +90,7 @@ router.get("/user", protectedRoute, async (req: Request, res: Response) => {
         }
 
         res.status(500).json({ message: "Server error" });
+        return;
     }
 });
 
@@ -123,6 +126,7 @@ router.delete("/:id", protectedRoute, async (req, res) => {
     } catch (error) {
         console.log("Error deleting book", error);
         res.status(500).json({ message: "Internal server error" });
+        return;
     }
 });
 
