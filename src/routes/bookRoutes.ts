@@ -2,6 +2,8 @@ import express, { Request, Response, Router } from "express";
 import Book from "../models/Book";
 import protectedRoute from "../middleware/auth.middleware";
 import cloudinary from "../lib/cloudinary";
+import { v4 as uuidv4 } from "uuid";
+import s3 from "../lib/s3";
 
 const router = Router();
 
@@ -14,16 +16,43 @@ router.post("/", protectedRoute, async (req: Request, res: Response) => {
             return;
         }
 
+        // Decode base64 image
+        const buffer = Buffer.from(image.replace(/^data:image\/\w+;base64,/, ""), "base64");
+        const mimeType = image.match(/^data:(image\/\w+);base64/)?.[1] || "image/png";
+
+
+        const imageKey = `books-images/${uuidv4()}.png`;
+
+
+        const uploadParams = {
+            Bucket: process.env.S3_BUCKET_NAME!,
+            Key: imageKey,
+            Body: buffer,
+            ContentEncoding: "base64",
+            ContentType: mimeType,
+        };
+
+        const uploadResult = await s3.upload(uploadParams).promise();
+        const imageUrl = uploadResult.Location;
+
+        console.log({ imageUrl });
+
+
+        if (await Book.findOne({ title })) {
+            res.status(400).json({ error: "Book already exists" });
+            return;
+        }
+
         // upload image to cloudinary
-        const uploadedImage = await cloudinary.uploader.upload(image, {
-            folder: "books-images",
-            transformation: [
-                { width: 1000, crop: "scale" },
-                { quality: "auto" },
-                { fetch_format: "auto" }
-            ]
-        });
-        const imageUrl = uploadedImage.secure_url;
+        // const uploadedImage = await cloudinary.uploader.upload(image, {
+        //     folder: "books-images",
+        //     transformation: [
+        //         { width: 1000, crop: "scale" },
+        //         { quality: "auto" },
+        //         { fetch_format: "auto" }
+        //     ]
+        // });
+        // const imageUrl = uploadedImage.secure_url;
 
 
         if (!imageUrl) {
@@ -109,15 +138,24 @@ router.delete("/:id", protectedRoute, async (req, res) => {
         }
 
         // https://res.cloudinary.com/de1rm4uto/image/upload/v1741568358/qyup61vejflxxw8igvi0.png
-        if (book.image && book.image.includes("cloudinary")) {
-            try {
-                const publicId = book.image ? book.image.split("/").pop()?.split(".")[0] : "";
-                if (publicId) {
-                    await cloudinary.uploader.destroy(publicId);
-                }
-            } catch (deleteError) {
-                console.log("Error deleting image from cloudinary", deleteError);
-            }
+        // if (book.image && book.image.includes("cloudinary")) {
+        //     try {
+        //         const publicId = book.image ? book.image.split("/").pop()?.split(".")[0] : "";
+        //         if (publicId) {
+        //             await cloudinary.uploader.destroy(publicId);
+        //         }
+        //     } catch (deleteError) {
+        //         console.log("Error deleting image from cloudinary", deleteError);
+        //     }
+        // }
+
+        // delete image from s3
+        if (book.image && book.image.includes("amazonaws.com")) {
+            const imageKey = book.image.split(".com/")[1];
+            await s3.deleteObject({
+                Bucket: process.env.S3_BUCKET_NAME!,
+                Key: imageKey
+            }).promise();
         }
 
         await book.deleteOne();
