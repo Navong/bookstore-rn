@@ -1,5 +1,7 @@
 import https from "https";
 import { CronJob } from "cron";
+import dotenv from "dotenv";
+dotenv.config();
 
 const job = new CronJob("*/14 * * * *", function () {
   https
