@@ -25,7 +25,7 @@ app.use('/api/books', bookRoutes);
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
     connectDB();
-    // job.start();
+    job.start();
 });
 
 export default app;
